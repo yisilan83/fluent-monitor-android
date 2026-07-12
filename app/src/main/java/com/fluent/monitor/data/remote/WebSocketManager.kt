@@ -1,5 +1,6 @@
 package com.fluent.monitor.data.remote
 
+import android.util.Log
 import com.fluent.monitor.data.model.FluentMessage
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.channels.BufferOverflow
@@ -10,9 +11,10 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "WebSocketManager"
 
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()
@@ -53,7 +55,7 @@ class WebSocketManager @Inject constructor(
         val request = Request.Builder().url(url).build()
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Timber.d("WebSocket connected: ${response.message}")
+                Log.d(TAG, "WebSocket connected: ${response.message}")
                 _connectionState.tryEmit(ConnectionState.Connected)
             }
 
@@ -64,22 +66,22 @@ class WebSocketManager @Inject constructor(
                         _messages.tryEmit(message)
                     }
                 } catch (e: Exception) {
-                    Timber.w(e, "Failed to parse message: %s", text.take(120))
+                    Log.w(TAG, "Failed to parse message: ${text.take(120)}", e)
                 }
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                Timber.d("WebSocket closing: $code $reason")
+                Log.d(TAG, "WebSocket closing: $code $reason")
                 webSocket.close(1000, null)
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Timber.d("WebSocket closed: $code $reason")
+                Log.d(TAG, "WebSocket closed: $code $reason")
                 _connectionState.tryEmit(ConnectionState.Disconnected)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Timber.e(t, "WebSocket failure")
+                Log.e(TAG, "WebSocket failure", t)
                 _connectionState.tryEmit(ConnectionState.Error(t.message ?: "Unknown error"))
             }
         })
