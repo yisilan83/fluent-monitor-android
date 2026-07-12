@@ -1,15 +1,17 @@
 package com.fluent.monitor.data.repository
 
-import androidx.compose.ui.geometry.Offset
-import com.fluent.monitor.data.model.FluentMessage
 import com.fluent.monitor.data.remote.WebSocketManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,7 +45,7 @@ class MonitorRepository @Inject constructor(
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
-    private var observeJob: kotlinx.coroutines.Job? = null
+    private var observeJob: Job? = null
 
     fun startObserving(scope: CoroutineScope) {
         if (observeJob?.isActive == true) return
@@ -100,9 +102,7 @@ class MonitorRepository @Inject constructor(
      * Accumulates values into batches emitted at fixed intervals.
      * All values received within [windowMillis] are collected and emitted as a list.
      */
-    private fun <T> kotlinx.coroutines.flow.Flow<T>.throttleWindow(
-        windowMillis: Long
-    ): kotlinx.coroutines.flow.Flow<List<T>> = flow {
+    private fun <T> Flow<T>.throttleWindow(windowMillis: Long): Flow<List<T>> = flow {
         coroutineScope {
             val channel = Channel<T>(Channel.UNLIMITED)
             val collector = launch {
