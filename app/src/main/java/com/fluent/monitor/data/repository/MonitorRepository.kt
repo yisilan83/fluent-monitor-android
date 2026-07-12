@@ -114,7 +114,7 @@ class MonitorRepository @Inject constructor(
                     delay(windowMillis)
                     val batch = mutableListOf<T>()
                     while (true) {
-                        val item = channel.poll() ?: break
+                        val item = channel.tryReceive().getOrNull() ?: break
                         batch.add(item)
                     }
                     if (batch.isNotEmpty()) emit(batch.toList())

@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -235,10 +235,9 @@ private fun ConnectionCard(
                     Surface(
                         modifier = Modifier.padding(end = 8.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = statusColor,
-                        content = {}
+                        color = statusColor
                     ) {
-                        Box(modifier = Modifier.height(12.dp).width(12.dp))
+                        Box(modifier = Modifier.size(12.dp))
                     }
                     Text(
                         text = statusText,
