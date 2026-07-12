@@ -17,15 +17,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fluent.monitor.ui.theme.ChartColors
 import kotlin.math.ceil
 import kotlin.math.floor
-import kotlin.math.ln
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -33,7 +32,7 @@ enum class YAxisScale { LINEAR, LOGARITHMIC }
 
 data class ChartSeries(
     val label: String,
-    val points: List<Pair<Float, Float>>, // (x, y) data coordinates
+    val points: List<Pair<Float, Float>>,
     val color: Color,
     val lineWidth: Float = 2f
 )
@@ -47,6 +46,9 @@ fun LineChart(
     modifier: Modifier = Modifier,
     title: String = ""
 ) {
+    val axisLabelArgb = ChartColors.axisLabel.toArgb()
+    val gridLineColor = ChartColors.gridLine
+
     Column(modifier = modifier) {
         if (title.isNotEmpty()) {
             Text(
@@ -99,7 +101,6 @@ fun LineChart(
 
             if (chartWidth <= 0 || chartHeight <= 0) return@Canvas
 
-            // Compute data ranges across all series
             val allX = series.flatMap { it.points.map { p -> p.first } }
             val allY = series.flatMap { it.points.map { p -> p.second } }
             if (allX.isEmpty() || allY.isEmpty()) return@Canvas
@@ -137,7 +138,7 @@ fun LineChart(
             }
 
             val textPaint = android.graphics.Paint().apply {
-                color = ChartColors.axisLabel.hashCode()
+                color = axisLabelArgb
                 textSize = 11.sp.toPx()
                 textAlign = android.graphics.Paint.Align.RIGHT
                 isAntiAlias = true
@@ -154,15 +155,13 @@ fun LineChart(
                     }
                 }
 
-                // Grid line
                 drawLine(
-                    color = ChartColors.gridLine.copy(alpha = 0.3f),
+                    color = gridLineColor.copy(alpha = 0.3f),
                     start = Offset(chartLeft, yPixel),
                     end = Offset(chartRight, yPixel),
                     strokeWidth = 1f
                 )
 
-                // Label
                 val label = when (yAxisScale) {
                     YAxisScale.LOGARITHMIC -> "1e${yVal.toInt()}"
                     YAxisScale.LINEAR -> String.format("%.1f", yVal)
@@ -177,7 +176,7 @@ fun LineChart(
 
             // --- X-axis labels ---
             val xTextPaint = android.graphics.Paint().apply {
-                color = ChartColors.axisLabel.hashCode()
+                color = axisLabelArgb
                 textSize = 10.sp.toPx()
                 textAlign = android.graphics.Paint.Align.CENTER
                 isAntiAlias = true
@@ -195,33 +194,20 @@ fun LineChart(
             }
 
             // --- Axis labels ---
+            val axisLabelPaint = android.graphics.Paint().apply {
+                color = axisLabelArgb
+                textSize = 11.sp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true
+            }
+
             drawContext.canvas.nativeCanvas.apply {
                 save()
                 rotate(-90f, 14.dp.toPx(), size.height / 2f)
-                drawText(
-                    yAxisLabel,
-                    14.dp.toPx(),
-                    size.height / 2f,
-                    android.graphics.Paint().apply {
-                        color = ChartColors.axisLabel.hashCode()
-                        textSize = 11.sp.toPx()
-                        textAlign = android.graphics.Paint.Align.CENTER
-                        isAntiAlias = true
-                    }
-                )
+                drawText(yAxisLabel, 14.dp.toPx(), size.height / 2f, axisLabelPaint)
                 restore()
 
-                drawText(
-                    xAxisLabel,
-                    size.width / 2f,
-                    chartBottom + 38.dp.toPx(),
-                    android.graphics.Paint().apply {
-                        color = ChartColors.axisLabel.hashCode()
-                        textSize = 11.sp.toPx()
-                        textAlign = android.graphics.Paint.Align.CENTER
-                        isAntiAlias = true
-                    }
-                )
+                drawText(xAxisLabel, size.width / 2f, chartBottom + 38.dp.toPx(), axisLabelPaint)
             }
 
             // --- Draw series lines ---
@@ -233,7 +219,9 @@ fun LineChart(
                     val xPixel = chartLeft + (x - xMin) / (xMax - xMin) * chartWidth
                     val yPixel = when (yAxisScale) {
                         YAxisScale.LOGARITHMIC -> {
-                            val logY = log10(maxOf(y, 10.0.pow(yMin.toDouble())).toFloat().toDouble()).toFloat()
+                            val logY = log10(
+                                maxOf(y, 10.0.pow(yMin.toDouble()).toFloat()).toDouble()
+                            ).toFloat()
                             chartBottom - (logY - yMin) / (yMax - yMin) * chartHeight
                         }
                         YAxisScale.LINEAR -> {
@@ -261,13 +249,13 @@ fun LineChart(
 
             // --- Axis frame ---
             drawLine(
-                color = ChartColors.gridLine,
+                color = gridLineColor,
                 start = Offset(chartLeft, chartTop),
                 end = Offset(chartLeft, chartBottom),
                 strokeWidth = 1.5f
             )
             drawLine(
-                color = ChartColors.gridLine,
+                color = gridLineColor,
                 start = Offset(chartLeft, chartBottom),
                 end = Offset(chartRight, chartBottom),
                 strokeWidth = 1.5f
